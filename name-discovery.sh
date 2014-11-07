@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+#
+#
+# Uses SRV records to describe services
+# Maps services/apps to usernames
+#
+#Assumptions:
+# User account auth stuff is taken care of
+# DNS entries already exist
+# Consistant naming pattern for instances:
+# Currently centos/RHEL only
+#
+# hostname.component.project.environment.domain
+# pweb01.web.naming.development.obowersa.local
+#
+# Author: Owen Bower Adams <owen@obowersa.net>
+
+parse_hostname() {
+  echo $1 | cut -d '.' -f $2
+}
+
+readonly E_NETWORK_SOURCE=3
+readonly E_NETWORK_OFFLINE=4
+readonly E_INIT_SOURCE=5
+readonly E_USER_SOURCE=6
+readonly E_USER_FUN=7
+readonly E_TOOL_DIG=8
+
+
+readonly HOSTNAME_LOCAL="$(hostname -f)"
+readonly DOMAINNAME="$(hostname -d)"
+readonly ENVIRONMENTNAME="$(parse_hostname $HOSTNAME_LOCAL 4)"
+readonly PROJECTNAME="$(parse_hostname $HOSTNAME_LOCAL 3)"
+readonly COMPONENTNAME="$(parse_hostname $HOSTNAME_LOCAL 2)"
+readonly INSTANCENAME="$(hostname -s)"
+readonly SRVNAME="_${DOMAINNAME}"
+
+err() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $@" >&2
+}
+
+prereq_checks() {
+
+  if [[ -r /etc/sysconfig/network ]]; then
+    . /etc/sysconfig/network 
+  else
+    err "Unable to source networking sysconfig"
+    exit "${E_NETWORK_SOURCE}"
+  fi
+
+  if [[ "${NETWORKING}" == "no" ]]; then
+    err "Networking is not enabled"
+    exit "${E_NETWORK_OFFLINE}"
+  fi
+
+  if [[ -r /etc/rc.d/init.d/functions ]]; then
+    . /etc/rc.d/init.d/functions
+  else
+    err "Could not source init.d functions"
+    exit "${E_INIT_SOURCE}"
+  fi
+
+  if [[ -r /etc/rc.d/init.d/process_user ]]; then
+    . /etc/rc.d/init.d/process_user
+    if [[ $(declare -fF process_user >/dev/null; echo $?) -eq 1 ]]; then
+      err "Could not find process_user function"
+      exit "${E_USER_FUN}"
+    fi
+  else
+    err "Could not source process_user"
+    exit "${E_USER_SOURCE}"
+  fi
+
+  if ! $(hash dig 2>/dev/null); then
+    err "Unable to find dig"
+    exit "${E_TOOL_DIG}"
+  fi
+}
+
+get_users() {
+  local service_names
+  service_names=$(dig +short -t srv "${SRVNAME}" | awk '{print $4}' | cut -d '.' -f 1 )
+  if [[ -n "${service_names}" ]]; then
+    while read service; do
+      if [[ -n "${service}" ]]; then
+        process_user "${service}"
+      else
+        err "Service was null"
+      fi
+    done <<< "${service_names}"
+  else
+    err "Could not retrieve any service names"
+  fi
+}
+
+start() {
+  prereq_checks
+  get_users
+}
+
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    true
+    ;;
+  *)
+    echo $"Usage: $0 {start}"
+    exit 1
+esac
+
+exit 0
