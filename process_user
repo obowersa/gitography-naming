@@ -1,5 +1,10 @@
 #!/bin/bash
 
+check_user() {
+}
+
+check_group(){
+}
 process_user(){
-  echo $?
+#  echo $?
 }

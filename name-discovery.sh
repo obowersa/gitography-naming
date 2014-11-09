@@ -5,7 +5,7 @@
 # Uses SRV records to describe services
 # Maps services/apps to usernames
 #
-#Assumptions:
+#1Assumptions:
 # User account auth stuff is taken care of
 # DNS entries already exist
 # Consistant naming pattern for instances:
@@ -25,7 +25,8 @@ readonly E_NETWORK_OFFLINE=4
 readonly E_INIT_SOURCE=5
 readonly E_USER_SOURCE=6
 readonly E_USER_FUN=7
-readonly E_TOOL_DIG=8
+readonly E_GROUP_FUN=8
+readonly E_TOOL_DIG=9
 
 
 readonly HOSTNAME_LOCAL="$(hostname -f)"
@@ -78,13 +79,36 @@ prereq_checks() {
   fi
 }
 
+split_user() {
+  local user_group
+  local field
+  $user_group=$1
+  $field=$2
+  if [[ "${user_group}" == *:* ]]; then
+    return $(echo "${user_group}" | cut -d ':' -f "${field}")
+  else
+    err "Could not locate group/user delimit: ${user_group}"
+  fi
+}
+
+
 get_users() {
   local service_names
+  local user_field 
+  local group_field
+  local user
+  local group
+
+  user_field=1
+  group_field=2
   service_names=$(dig +short -t srv "${SRVNAME}" | awk '{print $4}' | cut -d '.' -f 1 )
+
   if [[ -n "${service_names}" ]]; then
     while read service; do
       if [[ -n "${service}" ]]; then
-        process_user "${service}"
+        user=$(split_user "${service}"  "${user_field}")
+        group=$(split_user "${service}" "${group_field}")
+        process_user "${user}" "${group}"
       else
         err "Service was null"
       fi
