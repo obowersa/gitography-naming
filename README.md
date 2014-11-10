@@ -1,2 +1,3 @@
-gitography-naming
-=================
+Gitography Naming - SRV Service Discovery
+=========================================
+
