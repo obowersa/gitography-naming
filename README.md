@@ -71,34 +71,34 @@ Simple example
 For this example we assume the following:
 
 You have an instance with the hostname:
-'''bash
+```bash
  pweb01.web.naming.development.obowersa.net
-'''
+```
 You have dnsmasq configured with these records
 
-'''bash
+```bash
 srv-host =
 _web.naming.development.obowersa.net,weblb--weblb.services.naming.development.obowersa.net
 
 srv-host =
 _web.naming.development.obowersa.net,dbapp--oracle.services.naming.development.obowersa.net
 
-'''
+```
 
 You have the following user accounts and groups configured within your authentication
 backend
 
-'''bash
+```bash
 User:weblb:/home/weblb
 User:dbapp:/home/dbapp
 
 Group:weblb:Members:weblb
 Group:oracle:Members:dbapp
-'''
+```
 
 You have a very simple implementation of process_user implemented:
 
-'''bash
+```bash
 #!/bin/bash
 process_user(){
   local user
@@ -111,7 +111,7 @@ process_user(){
   sudo -u $user -H sh -c "${homedrive}/initialize.sh"
 
 }
-'''bash
+```
 
 
 With the above in place and name-discovery.sh configured to run on boot, the
