@@ -94,11 +94,23 @@ split_user() {
 
 validate_user(){
   local user
+  local uid
   local group
 
-  user=$(getent passwd "$1")
-  group=$(getent group "$2")
-  echo 1
+  user=$(getent passwd $1 | cut -d ':' -f 1)
+  group=$(getent group $2)
+
+  if [[ -n "${user}" && -n "${group}" ]];  then
+    uid=$(getent passwd $1 | cut -d ':' -f 3)
+
+    if [[ -n $(echo $group | grep -E "(${uid}($|:|,)|${user}($|:|,))") ]]; then
+      echo 1
+    else 
+      echo 0
+    fi
+  else
+    echo 0
+  fi
 
 }
 
@@ -120,6 +132,7 @@ get_users() {
         user=$(split_user "${service}"  "${user_field}")
         group=$(split_user "${service}" "${group_field}") 
 
+        #TODO: Fix the below to make it fit with general style of script
         [[ -z "${user}" ]] && continue
 
         if [[ $(validate_user "${user}" "${group}") -eq 1 ]]; then
