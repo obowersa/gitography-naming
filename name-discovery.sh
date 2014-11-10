@@ -5,7 +5,7 @@
 # Uses SRV records to describe services
 # Maps services/apps to usernames
 #
-#1Assumptions:
+# Assumptions:
 # User account auth stuff is taken care of
 # DNS entries already exist
 # Consistant naming pattern for instances:
@@ -82,15 +82,24 @@ prereq_checks() {
 split_user() {
   local user_group
   local field
-  $user_group=$1
-  $field=$2
-  if [[ "${user_group}" == *:* ]]; then
-    return $(echo "${user_group}" | cut -d ':' -f "${field}")
+  user_group=$1
+  field=$2
+  if [[ "${user_group}" = *--* ]]; then
+    user_group=${user_group/--/:}
+    echo $(echo "${user_group}" | cut -d ':' -f "${field}")
   else
     err "Could not locate group/user delimit: ${user_group}"
   fi
 }
 
+validate_user(){
+  local user
+  local group
+
+  user=$(getent passwd "$1")
+  group=$(getent group "$2")
+
+}
 
 get_users() {
   local service_names
