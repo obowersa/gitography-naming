@@ -1,10 +1,11 @@
 #!/bin/bash
-
-check_user() {
-}
-
-check_group(){
-}
 process_user(){
-#  echo $?
+  local user
+  local homedrive
+  local group
+
+  user=$1
+  homedrive=$2
+  group=$3
+
 }
