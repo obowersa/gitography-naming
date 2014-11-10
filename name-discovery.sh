@@ -119,6 +119,7 @@ get_users() {
   local user_field
   local group_field
   local user
+  local homedrive
   local group
 
   user_field=1
@@ -134,9 +135,9 @@ get_users() {
 
         #TODO: Fix the below to make it fit with general style of script
         [[ -z "${user}" ]] && continue
-
         if [[ $(validate_user "${user}" "${group}") -eq 1 ]]; then
-          process_user "${user}" "${group}"
+          homedrive=$(getent passwd "${user}" | cut -d -f 6)
+          process_user "${user}" "${homedrive}" "${group}"
         else
           err "Could not verify existence of ${user} ${group}"
         fi
