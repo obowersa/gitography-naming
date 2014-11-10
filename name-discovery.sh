@@ -84,7 +84,7 @@ split_user() {
   local field
   user_group=$1
   field=$2
-  if [[ "${user_group}" = *--* ]]; then
+  if [[ "${user_group}" == *--* ]]; then
     user_group=${user_group/--/:}
     echo $(echo "${user_group}" | cut -d ':' -f "${field}")
   else
@@ -98,26 +98,35 @@ validate_user(){
 
   user=$(getent passwd "$1")
   group=$(getent group "$2")
+  echo 1
 
 }
 
 get_users() {
   local service_names
-  local user_field 
+  local user_field
   local group_field
   local user
   local group
 
   user_field=1
   group_field=2
-  service_names=$(dig +short -t srv "${SRVNAME}" | awk '{print $4}' | cut -d '.' -f 1 )
+  service_names=$(dig +short -t srv "${SRVNAME}" | awk '{print $4}' |\
+    cut -d '.' -f 1 )
 
   if [[ -n "${service_names}" ]]; then
     while read service; do
       if [[ -n "${service}" ]]; then
         user=$(split_user "${service}"  "${user_field}")
-        group=$(split_user "${service}" "${group_field}")
-        process_user "${user}" "${group}"
+        group=$(split_user "${service}" "${group_field}") 
+
+        [[ -z "${user}" ]] && continue
+
+        if [[ $(validate_user "${user}" "${group}") -eq 1 ]]; then
+          process_user "${user}" "${group}"
+        else
+          err "Could not verify existence of ${user} ${group}"
+        fi
       else
         err "Service was null"
       fi
